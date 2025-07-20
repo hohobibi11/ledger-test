@@ -25,12 +25,11 @@ class TestLedger(unittest.TestCase):
             'ABC': Decimal("300.000000")
         })
         result = l.withdraw(Decimal("200"), "ABC", Decimal("20"))
-        # TODO: i do not get the idea!
         expected = [
-            {'amount_to': Decimal("187.500000"), 'amount_from': Decimal("110.000000"), 'currency_from': 'USDT', 'tx_id': 't1'},
-            {'amount_to': Decimal("12.500000"), 'amount_from': Decimal("19.066667"), 'currency_from': 'USDT', 'tx_id': 't2'},
+            {'amount_to': Decimal("170.454545"), 'amount_from': Decimal("110.000000"), 'currency_from': 'USDT', 'tx_id': 't1'},
+            {'amount_to': Decimal("29.545455"), 'amount_from': Decimal("19.066667"), 'currency_from': 'USDT', 'tx_id': 't2'},
         ]
-        # self.assertEqual(result, expected)
+        self.assertEqual(result, expected)
         self.assertEqual(l.balance(), {
             'USDT': Decimal("40.000000"),
             'ABC': Decimal("80.000000")

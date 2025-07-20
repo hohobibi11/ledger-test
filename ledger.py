@@ -34,6 +34,7 @@ class Ledger:
             id=tx_id,
             amount=amount,
             balance=net_amount,
+            fee=fee,
             currency=currency
         ))
 
@@ -58,11 +59,16 @@ class Ledger:
 
             take = min(tx.balance, remaining)
             proportion = take / required_amount
+
+            source_tx = self._transactions.item(tx.source_tx_id) if tx.source_tx_id is not None else tx
+            tx_amount_from = (take * tx.amount / tx.initial_balance) / tx.conversion_rate
+            source_amount_from = tx_amount_from if tx.source_tx_id is None else tx_amount_from * source_tx.amount / source_tx.initial_balance
             result.append({
                 'amount_to': _round(amount * proportion),
-                'amount_from': _round(take / tx.balance * tx.amount),
-                'currency_from': currency,
-                'tx_id': tx.source_tx_id if tx.source_tx_id is not None else tx.id,
+                'amount_from': _round(source_amount_from),
+                'currency_from': source_tx.currency,
+                'tx_id': source_tx.id,
+                'fee': _round(fee * proportion),
             })
 
             self._transactions.consume(tx.id, take)
@@ -71,17 +77,21 @@ class Ledger:
         return result
 
     def withdraw(self, amount: Decimal, currency: str, fee: Decimal):
-        return self._consume_funds(currency, amount, fee)
+        return [{k: v for k, v in d.items() if k != 'fee'} for d in self._consume_funds(currency, amount, fee)]
 
     def convert(self, amount_from: Decimal, currency_from: str, amount_to: Decimal, currency_to: str, fee: Decimal):
         conversion_trace = self._consume_funds(currency_from, amount_from, fee)
         rate = amount_to / amount_from
         for record in conversion_trace:
+            record_fee = record['fee'] * rate
+            record_amount = record['amount_to'] * rate
             self._transactions.append(
                 Transaction(
                     id=generate_random_tx_id(),
-                    balance=record['amount_to'] * rate,
-                    amount=record['amount_to'] * rate,
+                    balance=record_amount,
+                    amount=record_amount + record_fee,
+                    fee=record_fee,
                     currency=currency_to,
                     source_tx_id=record['tx_id'],
+                    conversion_rate=rate
                 ))

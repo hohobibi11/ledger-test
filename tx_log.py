@@ -24,15 +24,20 @@ class TxLog:
         with self._lock:
             return list(self._log)
 
-    def consume(self, tx_id: str, amount: Decimal):
+    def item(self, tx_id: str) -> Transaction:
         with self._lock:
             tx = next((t for t in self._log if t.id == tx_id), None)
             if tx is None:
                 raise ValueError("Transaction not found")
 
-            if tx.amount < amount:
-                raise ValueError("Insufficient funds")
+        return tx
 
+    def consume(self, tx_id: str, amount: Decimal):
+        tx = self.item(tx_id)
+        if tx.amount < amount:
+            raise ValueError("Insufficient funds")
+
+        with self._lock:
             tx.balance -= amount
             self._balance[tx.currency] -= amount
 
